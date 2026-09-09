@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-[#F4F6F4] text-earth-900 font-sans antialiased selection:bg-mint-light selection:text-forest-dark;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-6 py-2.5 bg-primary-600 text-white font-semibold rounded-2xl 
+           hover:bg-primary-700 active:bg-primary-800 transition-all shadow-sm
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-mint {
+    @apply px-6 py-2.5 bg-[#9FE870] text-[#07362A] font-bold rounded-full 
+           hover:bg-[#8EE25B] active:bg-[#7FD849] transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5;
+  }
+  .btn-secondary {
+    @apply px-6 py-2.5 bg-secondary-400 text-earth-900 font-semibold rounded-2xl 
+           hover:bg-secondary-500 transition-all shadow-sm;
+  }
+  .btn-outline {
+    @apply px-6 py-2.5 border-2 border-primary-600 text-primary-600 font-semibold rounded-2xl 
+           hover:bg-primary-50 transition-all;
+  }
+  .btn-outline-white {
+    @apply px-6 py-2.5 border-2 border-white/40 text-white font-semibold rounded-2xl 
+           hover:bg-white/10 hover:border-white transition-all backdrop-blur-sm;
+  }
+  .card {
+    @apply bg-white rounded-3xl shadow-sm border border-emerald-100/60 p-6 transition-all hover:shadow-md;
+  }
+  .card-grocery {
+    @apply bg-white rounded-3xl border border-gray-100 p-4 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 relative flex flex-col justify-between;
+  }
+  .input-field {
+    @apply w-full px-4 py-2.5 border border-earth-200 rounded-2xl 
+           focus:ring-2 focus:ring-primary-500 focus:border-primary-500 
+           outline-none transition-all bg-white;
+  }
+  .label {
+    @apply block text-sm font-semibold text-earth-700 mb-1.5;
+  }
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-bold tracking-wide;
+  }
+  .badge-success {
+    @apply badge bg-emerald-100 text-emerald-800;
+  }
+  .badge-mint {
+    @apply badge bg-[#9FE870] text-[#07362A];
+  }
+  .badge-warning {
+    @apply badge bg-amber-100 text-amber-800;
+  }
+  .badge-danger {
+    @apply badge bg-rose-100 text-rose-800;
+  }
+  .badge-info {
+    @apply badge bg-sky-100 text-sky-800;
+  }
+
+  .emoji-marker {
+    background: none !important;
+    border: none !important;
+  }
+
+  .route-point {
+    background: none !important;
+    border: none !important;
+  }
+}
+
+/* Custom Curved Hero Pattern */
+.hero-curve-bottom {
+  border-bottom-left-radius: 2.5rem;
+  border-bottom-right-radius: 2.5rem;
+}
+
+@media (min-width: 768px) {
+  .hero-curve-bottom {
+    border-bottom-left-radius: 4rem;
+    border-bottom-right-radius: 4rem;
+  }
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(159, 232, 112, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(159, 232, 112, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(159, 232, 112, 0); }
+}

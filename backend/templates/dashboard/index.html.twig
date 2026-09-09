@@ -1,0 +1,1763 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard Admin - TerraLink{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          primary: {
+            50: '#f0fdf4', 100: '#dcfce7', 200: '#bbf7d0', 300: '#86efac',
+            400: '#4ade80', 500: '#22c55e', 600: '#16a34a', 700: '#15803d',
+            800: '#166534', 900: '#14532d',
+          },
+          secondary: {
+            50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 300: '#fcd34d',
+            400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309',
+            800: '#92400e', 900: '#78350f',
+          },
+          earth: {
+            50: '#fafaf9', 100: '#f5f5f4', 200: '#e7e5e4', 300: '#d6d3d1',
+            400: '#a8a29e', 500: '#78716c', 600: '#57534e', 700: '#44403c',
+            800: '#292524', 900: '#1c1917',
+          },
+          danger: '#ef4444', warning: '#f59e0b', success: '#22c55e',
+        },
+        fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+      },
+    },
+  }
+</script>
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; background-color: #f5f5f4; }
+  .card-hover { transition: all 0.3s ease; }
+  .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1); }
+  .sidebar-link { transition: all 0.2s ease; }
+  .sidebar-link:hover, .sidebar-link.active { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: white; }
+  .animate-fade-in { animation: fadeIn 0.6s ease-out; }
+  .animate-slide-up { animation: slideUp 0.5s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .progress-bar { transition: width 1s ease-out; }
+  .pulse-dot { animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #f5f5f4; }
+  ::-webkit-scrollbar-thumb { background: #a8a29e; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #78716c; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div id="admin-root"></div>
+
+{% verbatim %}
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const mockData = {
+  stats: {
+    totalUsers: 1247, totalUsersTrend: 12.5,
+    totalOrders: 3856, totalOrdersTrend: 8.2,
+    totalRevenue: 45280000, totalRevenueTrend: 15.3,
+    totalProducts: 892, totalProductsTrend: -2.1,
+  },
+  recentOrders: [
+    { id: 'CMD-4521', client: 'Amadou F.', producteur: 'Kouame J.', montant: 125000, statut: 'payee', date: '2025-01-15 14:30' },
+    { id: 'CMD-4520', client: 'Ngo M.', producteur: 'Tchinda P.', montant: 89000, statut: 'en_cours', date: '2025-01-15 13:45' },
+    { id: 'CMD-4519', client: 'Fotso K.', producteur: 'Mbarga S.', montant: 234000, statut: 'confirmee', date: '2025-01-15 12:20' },
+    { id: 'CMD-4518', client: 'Njoya A.', producteur: 'Kamga L.', montant: 67000, statut: 'livree', date: '2025-01-15 11:10' },
+    { id: 'CMD-4517', client: 'Biya R.', producteur: 'Ekotto M.', montant: 156000, statut: 'annulee', date: '2025-01-15 10:05' },
+  ],
+  topProducts: [
+    { nom: 'Tomates', ventes: 1250, revenus: 8750000, croissance: 23 },
+    { nom: 'Bananes plantain', ventes: 980, revenus: 4900000, croissance: 15 },
+    { nom: 'Manioc', ventes: 850, revenus: 3400000, croissance: -5 },
+    { nom: 'Mais', ventes: 720, revenus: 2880000, croissance: 8 },
+    { nom: 'Haricots', ventes: 650, revenus: 3900000, croissance: 12 },
+  ],
+  topProducers: [
+    { nom: 'Kouame Jean', localisation: 'Yaounde', ventes: 156, revenus: 12400000, note: 4.8 },
+    { nom: 'Tchinda Paul', localisation: 'Douala', ventes: 134, revenus: 9800000, note: 4.7 },
+    { nom: 'Mbarga Sarah', localisation: 'Bafoussam', ventes: 112, revenus: 8500000, note: 4.9 },
+    { nom: 'Kamga Luc', localisation: 'Garoua', ventes: 98, revenus: 7200000, note: 4.6 },
+    { nom: 'Abena Claire', localisation: 'Maroua', ventes: 87, revenus: 6500000, note: 4.8 },
+  ],
+  monthlyRevenue: [3200000, 4100000, 3800000, 5200000, 4800000, 6100000, 5500000, 6800000, 7200000, 6500000, 7800000, 8500000],
+  monthlyOrders: [145, 189, 167, 234, 198, 267, 245, 289, 312, 278, 334, 356],
+  categoryDistribution: { legumes: 35, fruits: 25, tubercules: 20, cereales: 15, autres: 5 },
+  userRoles: { producteur: 45, acheteur: 40, livreur: 10, admin: 5 },
+  weeklyActivity: [65, 78, 90, 85, 95, 120, 110],
+  disputes: [
+    { id: 'LIT-008', commande: 'CMD-4512', type: 'qualite', statut: 'en_attente', date: '2025-01-15' },
+    { id: 'LIT-007', commande: 'CMD-4508', type: 'livraison', statut: 'en_traitement', date: '2025-01-14' },
+    { id: 'LIT-006', commande: 'CMD-4501', type: 'paiement', statut: 'resolu', date: '2025-01-13' },
+  ],
+  notifications: [
+    { id: 1, titre: 'Nouvelle commande', message: 'CMD-4521 en attente de confirmation', time: '2 min', lu: false },
+    { id: 2, titre: 'Litige ouvert', message: 'LIT-008 qualite produit', time: '15 min', lu: false },
+    { id: 3, titre: 'Stock faible', message: 'Tomates - Producteur #45', time: '1h', lu: true },
+    { id: 4, titre: 'Nouvel inscrit', message: 'Amadou F. - Acheteur', time: '2h', lu: true },
+  ],
+};
+
+// ---- Backend connection ----
+// The dashboard is served by Symfony itself, so relative /api/... calls hit
+// this same app (no CORS involved). Admin-only endpoints require a Bearer
+// token obtained via POST /api/auth/login (role must be "admin").
+const ADMIN_TOKEN_KEY = 'terralink_admin_token';
+
+const apiFetch = async (path, options = {}) => {
+  const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+  const res = await fetch(`/api${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
+  });
+  let body = null;
+  try { body = await res.json(); } catch (e) { /* no body */ }
+  if (!res.ok) {
+    if (res.status === 401) localStorage.removeItem(ADMIN_TOKEN_KEY);
+    throw new Error((body && body.message) || `Erreur ${res.status}`);
+  }
+  return body;
+};
+
+const useToasts = () => {
+  const [toasts, setToasts] = useState([]);
+  const push = (message, type = 'success') => {
+    const id = Date.now() + Math.random();
+    setToasts((t) => [...t, { id, message, type }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4000);
+  };
+  const ToastHost = () => (
+    <div className="fixed bottom-4 right-4 z-50 space-y-2 w-80">
+      {toasts.map((t) => (
+        <div key={t.id} className={`px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white animate-fade-in ${t.type === 'error' ? 'bg-red-500' : 'bg-primary-600'}`}>
+          {t.message}
+        </div>
+      ))}
+    </div>
+  );
+  return { push, ToastHost };
+};
+
+// Exports an array of flat objects to a downloadable CSV file.
+const exportToCsv = (filename, rows) => {
+  if (!rows || rows.length === 0) return;
+  const headers = Object.keys(rows[0]);
+  const escape = (value) => {
+    const str = value === null || value === undefined ? '' : String(value);
+    if (/[",\n]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+    return str;
+  };
+  const lines = [
+    headers.join(','),
+    ...rows.map((row) => headers.map((h) => escape(row[h])).join(',')),
+  ];
+  // Prefix with a BOM so Excel opens accented French characters correctly.
+  const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+const Icons = {
+  dashboard: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>,
+  package: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>,
+  truck: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-2.5-3.125A1 1 0 0 0 18.1 9H15"/><circle cx="7" cy="18" r="2"/><path d="M15 18H9"/></svg>,
+  alert: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>,
+  money: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>,
+  users: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  leaf: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>,
+  tag: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>,
+  refresh: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>,
+  menu: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>,
+  search: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
+  bell: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>,
+  arrowUp: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>,
+  arrowDown: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>,
+  check: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>,
+  x: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
+  settings: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>,
+  logout: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>,
+  trendUp: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
+  calendar: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>,
+  eye: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
+  mapPin: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>,
+  star: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+  chartBar: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>,
+  pieChart: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>,
+  message: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+  filter: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
+  download: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>,
+};
+
+const formatPrice = (amount) => new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
+const formatCompact = (amount) => {
+  if (amount >= 1000000) return (amount / 1000000).toFixed(1) + 'M';
+  if (amount >= 1000) return (amount / 1000).toFixed(1) + 'k';
+  return amount.toString();
+};
+const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+const statusConfig = {
+  payee: { label: 'Payee', bg: 'bg-primary-100', text: 'text-primary-700', dot: 'bg-primary-500' },
+  en_cours: { label: 'En cours', bg: 'bg-secondary-100', text: 'text-secondary-700', dot: 'bg-secondary-500' },
+  confirmee: { label: 'Confirmee', bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
+  livree: { label: 'Livree', bg: 'bg-earth-100', text: 'text-earth-700', dot: 'bg-earth-500' },
+  annulee: { label: 'Annulee', bg: 'bg-red-100', text: 'text-red-700', dot: 'bg-red-500' },
+  en_attente: { label: 'En attente', bg: 'bg-orange-100', text: 'text-orange-700', dot: 'bg-orange-500' },
+  en_traitement: { label: 'En traitement', bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
+  resolu: { label: 'Resolu', bg: 'bg-primary-100', text: 'text-primary-700', dot: 'bg-primary-500' },
+};
+
+const Badge = ({ status }) => {
+  const config = statusConfig[status] || statusConfig.en_attente;
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`}></span>
+      {config.label}
+    </span>
+  );
+};
+
+const StatCard = ({ title, value, subValue, trend, trendUp, icon: Icon, color, delay }) => {
+  const [count, setCount] = useState(0);
+  const target = typeof value === 'number' ? value : 0;
+
+  useEffect(() => {
+    if (typeof value !== 'number') return;
+    const duration = 1500, steps = 60, increment = target / steps;
+    let current = 0;
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= target) { setCount(target); clearInterval(timer); }
+      else { setCount(Math.floor(current)); }
+    }, duration / steps);
+    return () => clearInterval(timer);
+  }, [value]);
+
+  const colorClasses = {
+    green: 'bg-primary-50 text-primary-600 border-primary-200',
+    amber: 'bg-secondary-50 text-secondary-600 border-secondary-200',
+    blue: 'bg-blue-50 text-blue-600 border-blue-200',
+    red: 'bg-red-50 text-red-600 border-red-200',
+    purple: 'bg-purple-50 text-purple-600 border-purple-200',
+  };
+
+  return (
+    <div className="bg-white rounded-2xl p-6 border border-earth-200 card-hover animate-slide-up" style={{ animationDelay: `${delay}ms` }}>
+      <div className="flex items-start justify-between mb-4">
+        <div className={`p-3 rounded-xl border ${colorClasses[color] || colorClasses.green}`}><Icon /></div>
+        {trend !== undefined && (
+          <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${trendUp ? 'bg-primary-50 text-primary-700' : 'bg-red-50 text-red-700'}`}>
+            {trendUp ? <Icons.arrowUp /> : <Icons.arrowDown />}{Math.abs(trend)}%
+          </span>
+        )}
+      </div>
+      <h3 className="text-earth-500 text-sm font-medium mb-1">{title}</h3>
+      <p className="text-2xl font-bold text-earth-900">{typeof value === 'number' ? formatCompact(count) : value}</p>
+      {subValue && <p className="text-xs text-earth-400 mt-1">{subValue}</p>}
+    </div>
+  );
+};
+
+const SectionCard = ({ title, icon: Icon, children, action, className = '' }) => (
+  <div className={`bg-white rounded-2xl border border-earth-200 overflow-hidden ${className}`}>
+    <div className="flex items-center justify-between px-6 py-4 border-b border-earth-100">
+      <div className="flex items-center gap-3">
+        {Icon && <div className="p-2 bg-primary-50 rounded-lg"><Icon /></div>}
+        <h3 className="font-semibold text-earth-900">{title}</h3>
+      </div>
+      {action && <div>{action}</div>}
+    </div>
+    <div className="p-6">{children}</div>
+  </div>
+);
+
+const RevenueChart = () => {
+  const canvasRef = useRef(null);
+  const chartRef = useRef(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(34, 197, 94, 0.2)');
+    gradient.addColorStop(1, 'rgba(34, 197, 94, 0)');
+
+    chartRef.current = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aout', 'Sep', 'Oct', 'Nov', 'Dec'],
+        datasets: [{
+          label: 'Revenus (FCFA)',
+          data: mockData.monthlyRevenue,
+          borderColor: '#22c55e',
+          backgroundColor: gradient,
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#22c55e',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1c1917',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            padding: 12,
+            cornerRadius: 8,
+            callbacks: { label: (ctx) => formatPrice(ctx.raw) },
+          },
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#a8a29e' } },
+          y: { grid: { color: '#e7e5e4' }, ticks: { color: '#a8a29e', callback: (v) => formatCompact(v) } },
+        },
+        interaction: { intersect: false, mode: 'index' },
+      },
+    });
+    return () => chartRef.current?.destroy();
+  }, []);
+
+  return <div className="h-80"><canvas ref={canvasRef}></canvas></div>;
+};
+
+const OrdersChart = () => {
+  const canvasRef = useRef(null);
+  const chartRef = useRef(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    chartRef.current = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aout', 'Sep', 'Oct', 'Nov', 'Dec'],
+        datasets: [{
+          label: 'Commandes',
+          data: mockData.monthlyOrders,
+          backgroundColor: '#22c55e',
+          borderRadius: 6,
+          borderSkipped: false,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { backgroundColor: '#1c1917', padding: 12, cornerRadius: 8 },
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#a8a29e' } },
+          y: { grid: { color: '#e7e5e4' }, ticks: { color: '#a8a29e' } },
+        },
+      },
+    });
+    return () => chartRef.current?.destroy();
+  }, []);
+
+  return <div className="h-64"><canvas ref={canvasRef}></canvas></div>;
+};
+
+const CategoryChart = ({ labels, data }) => {
+  const canvasRef = useRef(null);
+  const chartRef = useRef(null);
+  const finalLabels = labels && labels.length ? labels : ['Legumes', 'Fruits', 'Tubercules', 'Cereales', 'Autres'];
+  const finalData = data && data.length ? data : Object.values(mockData.categoryDistribution);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    chartRef.current = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: finalLabels,
+        datasets: [{
+          data: finalData,
+          backgroundColor: ['#22c55e', '#f59e0b', '#3b82f6', '#8b5cf6', '#a8a29e', '#ec4899', '#06b6d4'],
+          borderWidth: 0,
+          hoverOffset: 8,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '70%',
+        plugins: {
+          legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true, color: '#57534e' } },
+        },
+      },
+    });
+    return () => chartRef.current?.destroy();
+  }, [JSON.stringify(finalLabels), JSON.stringify(finalData)]);
+
+  return <div className="h-64 flex items-center justify-center"><canvas ref={canvasRef}></canvas></div>;
+};
+
+const UserRolesChart = ({ labels, data }) => {
+  const canvasRef = useRef(null);
+  const chartRef = useRef(null);
+  const finalLabels = labels && labels.length ? labels : ['Producteurs', 'Acheteurs', 'Livreurs', 'Admins'];
+  const finalData = data && data.length ? data : Object.values(mockData.userRoles);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    chartRef.current = new Chart(ctx, {
+      type: 'polarArea',
+      data: {
+        labels: finalLabels,
+        datasets: [{
+          data: finalData,
+          backgroundColor: ['rgba(34,197,94,0.7)', 'rgba(245,158,11,0.7)', 'rgba(59,130,246,0.7)', 'rgba(139,92,246,0.7)'],
+          borderWidth: 2,
+          borderColor: '#fff',
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { padding: 15, usePointStyle: true, color: '#57534e' } },
+        },
+        scales: { r: { grid: { color: '#e7e5e4' }, ticks: { display: false } } },
+      },
+    });
+    return () => chartRef.current?.destroy();
+  }, [JSON.stringify(finalLabels), JSON.stringify(finalData)]);
+
+  return <div className="h-64"><canvas ref={canvasRef}></canvas></div>;
+};
+
+const ActivityChart = () => {
+  const canvasRef = useRef(null);
+  const chartRef = useRef(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    chartRef.current = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+        datasets: [{
+          label: 'Activite',
+          data: mockData.weeklyActivity,
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245,158,11,0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#a8a29e' } },
+          y: { display: false },
+        },
+      },
+    });
+    return () => chartRef.current?.destroy();
+  }, []);
+
+  return <div className="h-32"><canvas ref={canvasRef}></canvas></div>;
+};
+
+const Modal = ({ title, onClose, children, wide }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-earth-900/40 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className={`bg-white rounded-2xl shadow-2xl w-full ${wide ? 'max-w-2xl' : 'max-w-md'} max-h-[90vh] overflow-y-auto`} onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-earth-100 sticky top-0 bg-white">
+        <h3 className="font-semibold text-earth-900">{title}</h3>
+        <button onClick={onClose} className="p-1.5 hover:bg-earth-100 rounded-lg text-earth-500"><Icons.x /></button>
+      </div>
+      <div className="p-6">{children}</div>
+    </div>
+  </div>
+);
+
+const Field = ({ label, children }) => (
+  <label className="block mb-4">
+    <span className="block text-sm font-medium text-earth-700 mb-1.5">{label}</span>
+    {children}
+  </label>
+);
+
+const inputCls = "w-full px-3.5 py-2.5 bg-earth-50 border border-earth-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent";
+
+const SubmitButton = ({ loading, children }) => (
+  <button type="submit" disabled={loading}
+    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 transition disabled:opacity-60">
+    {loading ? 'Enregistrement...' : children}
+  </button>
+);
+
+// ---- Login gate ----
+const LoginScreen = ({ onLoggedIn, toast }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, mot_de_passe: password }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.message || 'Connexion impossible.');
+      if (!body.user || body.user.role !== 'admin') throw new Error('Ce compte n\'est pas administrateur.');
+      localStorage.setItem(ADMIN_TOKEN_KEY, body.token);
+      onLoggedIn();
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-earth-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-white rounded-2xl border border-earth-200 shadow-xl p-8">
+        <div className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center mb-4"><Icons.leaf /></div>
+        <h1 className="text-xl font-bold text-earth-900 mb-1">Administration TerraLink</h1>
+        <p className="text-sm text-earth-500 mb-6">Connectez-vous avec un compte administrateur.</p>
+        <form onSubmit={submit}>
+          <Field label="Email">
+            <input required type="email" className={inputCls} value={email} onChange={(e) => setEmail(e.target.value)} />
+          </Field>
+          <Field label="Mot de passe">
+            <input required type="password" className={inputCls} value={password} onChange={(e) => setPassword(e.target.value)} />
+          </Field>
+          <SubmitButton loading={loading}>Se connecter</SubmitButton>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ---- Create forms ----
+const CreateCategorieForm = ({ onCreated, onClose, toast }) => {
+  const [form, setForm] = useState({ nom: '', type_transport: 'standard', commission_fixe: '0', commission_pourcent: '0', approuve: false });
+  const [loading, setLoading] = useState(false);
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const created = await apiFetch('/categories', { method: 'POST', body: JSON.stringify(form) });
+      toast('Catégorie créée.');
+      onCreated(created);
+      onClose();
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit}>
+      <Field label="Nom"><input required className={inputCls} value={form.nom} onChange={set('nom')} /></Field>
+      <Field label="Type de transport">
+        <select className={inputCls} value={form.type_transport} onChange={set('type_transport')}>
+          <option value="standard">Standard</option>
+          <option value="refrigere">Réfrigéré</option>
+          <option value="fragile">Fragile</option>
+        </select>
+      </Field>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Commission fixe (FCFA)"><input type="number" step="0.01" className={inputCls} value={form.commission_fixe} onChange={set('commission_fixe')} /></Field>
+        <Field label="Commission (%)"><input type="number" step="0.01" className={inputCls} value={form.commission_pourcent} onChange={set('commission_pourcent')} /></Field>
+      </div>
+      <label className="flex items-center gap-2 mb-5 text-sm text-earth-700">
+        <input type="checkbox" checked={form.approuve} onChange={set('approuve')} className="rounded border-earth-300" />
+        Approuvée (visible immédiatement)
+      </label>
+      <SubmitButton loading={loading}>Créer la catégorie</SubmitButton>
+    </form>
+  );
+};
+
+const CreateProduitForm = ({ categories, onCreated, onClose, toast }) => {
+  const [form, setForm] = useState({ nom: '', description: '', unite: 'kg', prix_min: '', prix_max: '', photo: '', categorie_id: categories[0]?.id || '' });
+  const [loading, setLoading] = useState(false);
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const created = await apiFetch('/produits', { method: 'POST', body: JSON.stringify(form) });
+      toast('Produit créé.');
+      onCreated(created);
+      onClose();
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (categories.length === 0) {
+    return <p className="text-sm text-earth-500">Créez d'abord une catégorie avant d'ajouter un produit.</p>;
+  }
+
+  return (
+    <form onSubmit={submit}>
+      <Field label="Nom"><input required className={inputCls} value={form.nom} onChange={set('nom')} /></Field>
+      <Field label="Description">
+        <textarea className={inputCls} rows={3} value={form.description} onChange={set('description')} />
+      </Field>
+      <div className="grid grid-cols-3 gap-4">
+        <Field label="Unité"><input required placeholder="kg, sac..." className={inputCls} value={form.unite} onChange={set('unite')} /></Field>
+        <Field label="Prix min"><input required type="number" step="0.01" className={inputCls} value={form.prix_min} onChange={set('prix_min')} /></Field>
+        <Field label="Prix max"><input required type="number" step="0.01" className={inputCls} value={form.prix_max} onChange={set('prix_max')} /></Field>
+      </div>
+      <Field label="Catégorie">
+        <select required className={inputCls} value={form.categorie_id} onChange={set('categorie_id')}>
+          {categories.map((c) => <option key={c.id} value={c.id}>{c.nom}</option>)}
+        </select>
+      </Field>
+      <Field label="Photo (URL, optionnel)"><input className={inputCls} value={form.photo} onChange={set('photo')} /></Field>
+      <SubmitButton loading={loading}>Créer le produit</SubmitButton>
+    </form>
+  );
+};
+
+const CreateUserForm = ({ onCreated, onClose, toast }) => {
+  const [form, setForm] = useState({ nom: '', prenom: '', email: '', telephone: '', mot_de_passe: '', role: 'acheteur', localisation: '', adresse_livraison: '', type_transport: '' });
+  const [loading, setLoading] = useState(false);
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      // Admin-created accounts go through the same registration endpoint;
+      // we simply don't act on the token it returns for the new user.
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.message || 'Création impossible.');
+      toast('Utilisateur créé.');
+      onCreated(body.user);
+      onClose();
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit}>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Nom"><input required className={inputCls} value={form.nom} onChange={set('nom')} /></Field>
+        <Field label="Prénom"><input required className={inputCls} value={form.prenom} onChange={set('prenom')} /></Field>
+      </div>
+      <Field label="Email"><input required type="email" className={inputCls} value={form.email} onChange={set('email')} /></Field>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Téléphone"><input required className={inputCls} value={form.telephone} onChange={set('telephone')} /></Field>
+        <Field label="Mot de passe"><input required type="password" className={inputCls} value={form.mot_de_passe} onChange={set('mot_de_passe')} /></Field>
+      </div>
+      <Field label="Rôle">
+        <select className={inputCls} value={form.role} onChange={set('role')}>
+          <option value="acheteur">Acheteur</option>
+          <option value="producteur">Producteur</option>
+          <option value="livreur">Livreur</option>
+          <option value="admin">Administrateur</option>
+        </select>
+      </Field>
+      <Field label="Localisation (optionnel)"><input className={inputCls} value={form.localisation} onChange={set('localisation')} /></Field>
+      {form.role === 'acheteur' && (
+        <Field label="Adresse de livraison (optionnel)"><input className={inputCls} value={form.adresse_livraison} onChange={set('adresse_livraison')} /></Field>
+      )}
+      {form.role === 'livreur' && (
+        <Field label="Type de transport (optionnel)"><input className={inputCls} value={form.type_transport} onChange={set('type_transport')} /></Field>
+      )}
+      <SubmitButton loading={loading}>Créer l'utilisateur</SubmitButton>
+    </form>
+  );
+};
+
+const OverviewTab = ({ toast }) => {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    apiFetch('/admin/dashboard/api/stats')
+      .then(setStats)
+      .catch((err) => { setError(err.message); toast(err.message, 'error'); })
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard title="Utilisateurs" value="…" icon={Icons.users} color="green" delay={0} />
+          <StatCard title="Commandes" value="…" icon={Icons.package} color="blue" delay={100} />
+          <StatCard title="Revenus" value="…" subValue="Paiements validés" icon={Icons.money} color="amber" delay={200} />
+          <StatCard title="Produits" value="…" icon={Icons.leaf} color="purple" delay={300} />
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !stats) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <Icons.alert />
+          </div>
+          <h3 className="font-semibold text-red-800 mb-1">Erreur de chargement</h3>
+          <p className="text-sm text-red-600 mb-4">{error || 'Impossible de charger les statistiques.'}</p>
+          <button onClick={() => { setLoading(true); setError(null); apiFetch('/admin/dashboard/api/stats').then(setStats).catch((err) => { setError(err.message); toast(err.message, 'error'); }).finally(() => setLoading(false)); }}
+            className="px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition">Réessayer</button>
+        </div>
+      </div>
+    );
+  }
+
+  const roleLabels = { producteur: 'Producteurs', acheteur: 'Acheteurs', livreur: 'Livreurs', admin: 'Admins' };
+  const rolesEntries = Object.entries(stats.repartition_roles || {});
+  const categoryEntries = Object.entries(stats.repartition_categories || {});
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard title="Utilisateurs" value={stats.utilisateurs} icon={Icons.users} color="green" delay={0} />
+        <StatCard title="Commandes" value={stats.commandes} subValue={`${stats.commandes_payees} payées`} icon={Icons.package} color="blue" delay={100} />
+        <StatCard title="Revenus" value={formatPrice(stats.revenus)} subValue="Paiements validés" icon={Icons.money} color="amber" delay={200} />
+        <StatCard title="Produits" value={stats.produits} subValue={`${stats.lots} lots publiés`} icon={Icons.leaf} color="purple" delay={300} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <SectionCard title="Evolution des revenus" icon={Icons.chartBar} className="lg:col-span-2"
+          action={<span className="text-xs text-earth-400">Données de démonstration</span>}>
+          <RevenueChart />
+        </SectionCard>
+        <SectionCard title="Repartition par categorie" icon={Icons.pieChart}>
+          {loading ? <p className="text-sm text-earth-400 py-20 text-center">Chargement...</p> : categoryEntries.length === 0 ? (
+            <p className="text-sm text-earth-400 py-20 text-center">Aucun produit catégorisé.</p>
+          ) : (
+            <CategoryChart labels={categoryEntries.map(([nom]) => nom)} data={categoryEntries.map(([, total]) => total)} />
+          )}
+        </SectionCard>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SectionCard title="Commandes mensuelles" icon={Icons.package}
+          action={<span className="text-xs text-earth-400">Données de démonstration</span>}>
+          <OrdersChart />
+        </SectionCard>
+        <SectionCard title="Repartition des roles" icon={Icons.users}>
+          {loading ? <p className="text-sm text-earth-400 py-20 text-center">Chargement...</p> : rolesEntries.length === 0 ? (
+            <p className="text-sm text-earth-400 py-20 text-center">Aucun utilisateur.</p>
+          ) : (
+            <UserRolesChart labels={rolesEntries.map(([role]) => roleLabels[role] || role)} data={rolesEntries.map(([, total]) => total)} />
+          )}
+        </SectionCard>
+      </div>
+    </div>
+  );
+};
+
+const producteurNomForCommande = (commande) => {
+  for (const ligne of (commande.lignes || [])) {
+    const producteur = ligne.lot?.producteur;
+    if (producteur) return `${producteur.nom} ${producteur.prenom}`;
+  }
+  return '—';
+};
+
+const CommandesTab = ({ toast }) => {
+  const [commandes, setCommandes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    apiFetch('/commandes')
+      .then(setCommandes)
+      .catch((err) => toast(err.message, 'error'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = commandes.filter((c) => {
+    if (!search) return true;
+    const haystack = `${c.id} ${c.acheteur?.nom || ''} ${c.acheteur?.prenom || ''} ${producteurNomForCommande(c)}`.toLowerCase();
+    return haystack.includes(search.toLowerCase());
+  });
+
+  const handleExport = () => {
+    if (filtered.length === 0) {
+      toast('Aucune commande à exporter.', 'error');
+      return;
+    }
+    exportToCsv('commandes.csv', filtered.map((c) => ({
+      id: c.id,
+      client: `${c.acheteur?.nom || ''} ${c.acheteur?.prenom || ''}`.trim(),
+      producteur: producteurNomForCommande(c),
+      montant_total: c.montant_total,
+      date_commande: c.date_commande,
+      statut: c.statut,
+    })));
+    toast(`${filtered.length} commande(s) exportée(s).`);
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-earth-400"><Icons.search /></span>
+            <input type="text" placeholder="Rechercher une commande..." value={search} onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 pr-4 py-2.5 bg-white border border-earth-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent w-80" />
+          </div>
+        </div>
+        <button onClick={handleExport} className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 transition">
+          <Icons.download /> Exporter
+        </button>
+      </div>
+
+      <SectionCard title="Toutes les commandes" icon={Icons.package}>
+        {loading ? (
+          <p className="text-sm text-earth-400 py-6 text-center">Chargement...</p>
+        ) : filtered.length === 0 ? (
+          <p className="text-sm text-earth-400 py-6 text-center">Aucune commande.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="text-left text-xs text-earth-500 uppercase tracking-wider border-b border-earth-200">
+                  <th className="pb-3 font-medium">Commande</th>
+                  <th className="pb-3 font-medium">Client</th>
+                  <th className="pb-3 font-medium">Producteur</th>
+                  <th className="pb-3 font-medium">Montant</th>
+                  <th className="pb-3 font-medium">Date</th>
+                  <th className="pb-3 font-medium">Statut</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-earth-100">
+                {filtered.map((order) => (
+                  <tr key={order.id} className="hover:bg-earth-50 transition-colors">
+                    <td className="py-4"><span className="font-mono text-sm font-medium text-earth-900">CMD-{order.id}</span></td>
+                    <td className="py-4 text-sm text-earth-700">{order.acheteur?.nom} {order.acheteur?.prenom}</td>
+                    <td className="py-4 text-sm text-earth-700">{producteurNomForCommande(order)}</td>
+                    <td className="py-4 text-sm font-semibold text-earth-900">{formatPrice(order.montant_total)}</td>
+                    <td className="py-4 text-sm text-earth-500">{formatDate(order.date_commande)}</td>
+                    <td className="py-4"><Badge status={order.statut} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+    </div>
+  );
+};
+
+const LivraisonsTab = ({ toast }) => {
+  const [livraisons, setLivraisons] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetch('/livraisons')
+      .then(setLivraisons)
+      .catch((err) => toast(err.message, 'error'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const countByStatut = (statut) => livraisons.filter((l) => l.statut === statut).length;
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard title="Assignees" value={loading ? '…' : countByStatut('assignee')} icon={Icons.truck} color="amber" delay={0} />
+        <StatCard title="En cours" value={loading ? '…' : countByStatut('en_cours')} icon={Icons.truck} color="blue" delay={100} />
+        <StatCard title="Livrees" value={loading ? '…' : countByStatut('livree')} icon={Icons.check} color="green" delay={200} />
+      </div>
+
+      <SectionCard title="Carte des livraisons" icon={Icons.mapPin}>
+        <div className="bg-earth-100 rounded-xl h-96 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-earth-200 rounded-full flex items-center justify-center mx-auto mb-3"><Icons.mapPin /></div>
+            <p className="text-earth-500">Carte interactive des livraisons en temps reel</p>
+            <p className="text-xs text-earth-400 mt-1">Integration Google Maps / Leaflet a venir</p>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Missions" icon={Icons.truck}>
+        {loading ? (
+          <p className="text-sm text-earth-400 py-6 text-center">Chargement...</p>
+        ) : livraisons.length === 0 ? (
+          <p className="text-sm text-earth-400 py-6 text-center">Aucune livraison.</p>
+        ) : (
+          <div className="space-y-4">
+            {livraisons.map((liv) => (
+              <div key={liv.id} className="bg-earth-50 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center"><Icons.truck /></div>
+                    <div>
+                      <p className="font-medium text-earth-900 text-sm">LIV-{liv.id}</p>
+                      <p className="text-xs text-earth-500">{liv.livreur ? `${liv.livreur.nom} ${liv.livreur.prenom}` : 'Non assignée'}</p>
+                    </div>
+                  </div>
+                  <Badge status={liv.statut} />
+                </div>
+                <div className="flex items-center gap-2 text-sm text-earth-600 mb-2">
+                  <span>Commande CMD-{liv.commande?.id}</span><span className="text-earth-400">→</span><span>{liv.adresse_livraison}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+    </div>
+  );
+};
+
+const LitigesTab = ({ toast }) => {
+  const [litiges, setLitiges] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [resolvingId, setResolvingId] = useState(null);
+  const [resolutionText, setResolutionText] = useState('');
+  const [busyId, setBusyId] = useState(null);
+
+  const load = () => {
+    setLoading(true);
+    apiFetch('/admin/litiges')
+      .then(setLitiges)
+      .catch((err) => toast(err.message, 'error'))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const updateLitige = async (id, payload) => {
+    setBusyId(id);
+    try {
+      const updated = await apiFetch(`/admin/litiges/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+      setLitiges((prev) => prev.map((l) => (l.id === id ? updated : l)));
+      toast('Litige mis à jour.');
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const submitResolution = async (id) => {
+    await updateLitige(id, { statut: 'resolu', resolution: resolutionText });
+    setResolvingId(null);
+    setResolutionText('');
+  };
+
+  const countByStatut = (statut) => litiges.filter((l) => l.statut === statut).length;
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard title="Ouverts" value={loading ? '…' : countByStatut('ouvert')} icon={Icons.alert} color="red" delay={0} />
+        <StatCard title="En traitement" value={loading ? '…' : countByStatut('en_traitement')} icon={Icons.message} color="amber" delay={100} />
+        <StatCard title="Resolus" value={loading ? '…' : countByStatut('resolu')} icon={Icons.check} color="green" delay={200} />
+      </div>
+
+      <SectionCard title="Litiges" icon={Icons.alert}>
+        {loading ? (
+          <p className="text-sm text-earth-400 py-6 text-center">Chargement...</p>
+        ) : litiges.length === 0 ? (
+          <p className="text-sm text-earth-400 py-6 text-center">Aucun litige.</p>
+        ) : (
+          <div className="space-y-4">
+            {litiges.map((litige) => (
+              <div key={litige.id} className="border border-earth-200 rounded-xl p-4 hover:border-primary-300 transition">
+                <div className="flex items-start justify-between flex-wrap gap-3">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-xl bg-red-50 text-red-600">
+                      <Icons.alert />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm font-medium text-earth-900">LIT-{litige.id}</span>
+                        <span className="text-earth-400">•</span>
+                        <span className="text-sm text-earth-500">CMD-{litige.commande?.id}</span>
+                      </div>
+                      <p className="text-sm text-earth-600 mt-1">{litige.motif}</p>
+                      {litige.description && <p className="text-xs text-earth-500 mt-1">{litige.description}</p>}
+                      <p className="text-xs text-earth-400 mt-1">Ouvert le {formatDate(litige.date_creation)}</p>
+                      {litige.resolution && <p className="text-xs text-primary-600 mt-1">Résolution : {litige.resolution}</p>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge status={litige.statut} />
+                    {litige.statut === 'ouvert' && (
+                      <button disabled={busyId === litige.id} onClick={() => updateLitige(litige.id, { statut: 'en_traitement' })}
+                        className="px-3 py-1.5 bg-primary-600 text-white text-xs font-medium rounded-lg hover:bg-primary-700 transition disabled:opacity-50">Traiter</button>
+                    )}
+                    {(litige.statut === 'ouvert' || litige.statut === 'en_traitement') && (
+                      <button disabled={busyId === litige.id} onClick={() => { setResolvingId(litige.id); setResolutionText(''); }}
+                        className="px-3 py-1.5 bg-earth-800 text-white text-xs font-medium rounded-lg hover:bg-earth-900 transition disabled:opacity-50">Résoudre</button>
+                    )}
+                    {(litige.statut === 'ouvert' || litige.statut === 'en_traitement') && (
+                      <button disabled={busyId === litige.id} onClick={() => updateLitige(litige.id, { statut: 'rejete' })}
+                        className="px-3 py-1.5 bg-white border border-earth-200 text-earth-600 text-xs font-medium rounded-lg hover:bg-earth-50 transition disabled:opacity-50">Rejeter</button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+
+      {resolvingId !== null && (
+        <Modal title="Résoudre le litige" onClose={() => setResolvingId(null)}>
+          <form onSubmit={(e) => { e.preventDefault(); submitResolution(resolvingId); }}>
+            <Field label="Résolution">
+              <textarea required className={inputCls} rows={4} value={resolutionText} onChange={(e) => setResolutionText(e.target.value)} placeholder="Décrivez comment le litige a été résolu..." />
+            </Field>
+            <SubmitButton loading={busyId === resolvingId}>Confirmer la résolution</SubmitButton>
+          </form>
+        </Modal>
+      )}
+    </div>
+  );
+};
+
+const PaiementsTab = ({ toast }) => {
+  const [paiements, setPaiements] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiFetch('/paiements')
+      .then(setPaiements)
+      .catch((err) => toast(err.message, 'error'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const sumByStatut = (statut) => paiements.filter((p) => p.statut === statut).reduce((sum, p) => sum + p.montant, 0);
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard title="Total encaisse" value={loading ? '…' : formatPrice(sumByStatut('valide'))} icon={Icons.money} color="green" delay={0} />
+        <StatCard title="En attente" value={loading ? '…' : formatPrice(sumByStatut('en_attente'))} icon={Icons.money} color="amber" delay={100} />
+        <StatCard title="Remboursements" value={loading ? '…' : formatPrice(sumByStatut('rembourse'))} icon={Icons.money} color="red" delay={200} />
+      </div>
+
+      <SectionCard title="Historique des paiements" icon={Icons.money}>
+        {loading ? (
+          <p className="text-sm text-earth-400 py-6 text-center">Chargement...</p>
+        ) : paiements.length === 0 ? (
+          <p className="text-sm text-earth-400 py-6 text-center">Aucun paiement.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="text-left text-xs text-earth-500 uppercase tracking-wider border-b border-earth-200">
+                  <th className="pb-3 font-medium">Commande</th>
+                  <th className="pb-3 font-medium">Montant</th>
+                  <th className="pb-3 font-medium">Méthode</th>
+                  <th className="pb-3 font-medium">Référence</th>
+                  <th className="pb-3 font-medium">Date</th>
+                  <th className="pb-3 font-medium">Statut</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-earth-100">
+                {paiements.map((p) => (
+                  <tr key={p.id} className="hover:bg-earth-50 transition-colors">
+                    <td className="py-4 text-sm font-mono text-earth-900">CMD-{p.commande_id}</td>
+                    <td className="py-4 text-sm font-semibold text-earth-900">{formatPrice(p.montant)}</td>
+                    <td className="py-4 text-sm text-earth-600">{p.methode}</td>
+                    <td className="py-4 text-sm text-earth-500">{p.reference || '—'}</td>
+                    <td className="py-4 text-sm text-earth-500">{formatDate(p.date_paiement)}</td>
+                    <td className="py-4"><Badge status={p.statut} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+    </div>
+  );
+};
+
+const ROLE_STYLES = {
+  producteur: { label: 'Producteur', icon: Icons.leaf, gradient: 'from-primary-500 to-primary-700', chip: 'bg-primary-100 text-primary-700' },
+  acheteur: { label: 'Acheteur', icon: Icons.package, gradient: 'from-secondary-400 to-secondary-600', chip: 'bg-secondary-100 text-secondary-700' },
+  livreur: { label: 'Livreur', icon: Icons.truck, gradient: 'from-blue-400 to-blue-600', chip: 'bg-blue-100 text-blue-700' },
+  admin: { label: 'Administrateur', icon: Icons.settings, gradient: 'from-purple-400 to-purple-600', chip: 'bg-purple-100 text-purple-700' },
+};
+
+const UsersTab = ({ toast }) => {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [showCreate, setShowCreate] = useState(false);
+
+  const load = () => {
+    setLoading(true);
+    apiFetch('/utilisateurs')
+      .then(setUsers)
+      .catch((err) => toast(err.message, 'error'))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const filtered = users.filter((u) => {
+    const matchesSearch = !search || `${u.nom} ${u.prenom} ${u.email}`.toLowerCase().includes(search.toLowerCase());
+    const matchesRole = !roleFilter || u.role === roleFilter;
+    return matchesSearch && matchesRole;
+  });
+
+  const roleCounts = users.reduce((acc, u) => { acc[u.role] = (acc[u.role] || 0) + 1; return acc; }, {});
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      {/* Stats strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <button onClick={() => setRoleFilter('')}
+          className={`p-4 rounded-xl border text-left transition ${!roleFilter ? 'bg-earth-900 border-earth-900 text-white' : 'bg-white border-earth-200 hover:border-earth-300'}`}>
+          <p className={`text-2xl font-bold ${!roleFilter ? 'text-white' : 'text-earth-900'}`}>{users.length}</p>
+          <p className={`text-xs ${!roleFilter ? 'text-earth-300' : 'text-earth-500'}`}>Tous</p>
+        </button>
+        {Object.entries(ROLE_STYLES).map(([role, cfg]) => (
+          <button key={role} onClick={() => setRoleFilter(role)}
+            className={`p-4 rounded-xl border text-left transition ${roleFilter === role ? `bg-gradient-to-br ${cfg.gradient} border-transparent text-white` : 'bg-white border-earth-200 hover:border-earth-300'}`}>
+            <div className="flex items-center justify-between">
+              <p className={`text-2xl font-bold ${roleFilter === role ? 'text-white' : 'text-earth-900'}`}>{roleCounts[role] || 0}</p>
+              <span className={roleFilter === role ? 'text-white/80' : 'text-earth-400'}><cfg.icon /></span>
+            </div>
+            <p className={`text-xs ${roleFilter === role ? 'text-white/80' : 'text-earth-500'}`}>{cfg.label}s</p>
+          </button>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="relative flex-1 min-w-[240px] max-w-md">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-earth-400"><Icons.search /></span>
+          <input type="text" placeholder="Rechercher un utilisateur..." value={search} onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-earth-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => {
+            if (filtered.length === 0) { toast('Aucun utilisateur à exporter.', 'error'); return; }
+            exportToCsv('utilisateurs.csv', filtered.map((u) => ({
+              id: u.id, nom: u.nom, prenom: u.prenom, email: u.email, role: u.role,
+              localisation: u.localisation || '', statut: u.statut,
+            })));
+            toast(`${filtered.length} utilisateur(s) exporté(s).`);
+          }} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-earth-200 rounded-xl text-sm text-earth-600 hover:bg-earth-50 transition">
+            <Icons.download /> Exporter
+          </button>
+          <button onClick={() => setShowCreate(true)} className="px-4 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 transition">+ Nouvel utilisateur</button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="p-5 bg-white border border-earth-200 rounded-2xl animate-pulse">
+              <div className="w-12 h-12 rounded-full bg-earth-100 mb-3"></div>
+              <div className="h-3 w-2/3 bg-earth-100 rounded mb-2"></div>
+              <div className="h-3 w-1/2 bg-earth-100 rounded"></div>
+            </div>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="py-16 text-center bg-white border border-earth-200 rounded-2xl">
+          <span className="inline-flex text-earth-300 mb-2"><Icons.users /></span>
+          <p className="text-sm text-earth-400">Aucun utilisateur ne correspond à ces critères.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((user) => {
+            const cfg = ROLE_STYLES[user.role] || ROLE_STYLES.acheteur;
+            return (
+              <div key={user.id} className="card-hover group p-5 bg-white border border-earth-200 rounded-2xl relative overflow-hidden">
+                <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full bg-gradient-to-br ${cfg.gradient} opacity-10`}></div>
+                <div className="flex items-start justify-between relative">
+                  <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${cfg.gradient} flex items-center justify-center text-white font-bold shadow-sm`}>
+                    {(user.prenom || '?')[0]}{(user.nom || '?')[0]}
+                  </div>
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                    user.statut === 'actif' ? 'bg-primary-100 text-primary-700' : 'bg-red-100 text-red-700'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${user.statut === 'actif' ? 'bg-primary-500' : 'bg-red-500'}`}></span>
+                    {user.statut}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm font-semibold text-earth-900">{user.nom} {user.prenom}</p>
+                <p className="text-xs text-earth-400 truncate">{user.email}</p>
+                <div className="mt-3 flex items-center justify-between">
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${cfg.chip}`}>
+                    <cfg.icon /> {cfg.label}
+                  </span>
+                  {user.localisation && (
+                    <span className="inline-flex items-center gap-1 text-xs text-earth-400">
+                      <Icons.mapPin /> {user.localisation}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-4 pt-3 border-t border-earth-100 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button className="p-2 hover:bg-earth-100 rounded-lg transition text-earth-500 hover:text-primary-600"><Icons.eye /></button>
+                  <button className="p-2 hover:bg-earth-100 rounded-lg transition text-earth-500 hover:text-secondary-600"><Icons.settings /></button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {showCreate && (
+        <Modal title="Nouvel utilisateur" onClose={() => setShowCreate(false)}>
+          <CreateUserForm toast={toast} onClose={() => setShowCreate(false)} onCreated={(u) => setUsers((prev) => [...prev, u])} />
+        </Modal>
+      )}
+    </div>
+  );
+};
+
+const CategoriesTab = ({ toast }) => {
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+
+  const load = () => {
+    setLoading(true);
+    apiFetch('/categories')
+      .then(setCategories)
+      .catch((err) => toast(err.message, 'error'))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center justify-end">
+        <button onClick={() => setShowCreate(true)} className="px-4 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 transition">+ Nouvelle catégorie</button>
+      </div>
+
+      <SectionCard title="Catégories de produits" icon={Icons.tag}>
+        {loading ? (
+          <p className="text-sm text-earth-400 py-6 text-center">Chargement...</p>
+        ) : categories.length === 0 ? (
+          <p className="text-sm text-earth-400 py-6 text-center">Aucune catégorie pour le moment.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="text-left text-xs text-earth-500 uppercase tracking-wider border-b border-earth-200">
+                  <th className="pb-3 font-medium">Nom</th>
+                  <th className="pb-3 font-medium">Transport</th>
+                  <th className="pb-3 font-medium">Commission fixe</th>
+                  <th className="pb-3 font-medium">Commission %</th>
+                  <th className="pb-3 font-medium">Statut</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-earth-100">
+                {categories.map((c) => (
+                  <tr key={c.id} className="hover:bg-earth-50 transition-colors">
+                    <td className="py-4 text-sm font-medium text-earth-900">{c.nom}</td>
+                    <td className="py-4 text-sm text-earth-600">{c.type_transport}</td>
+                    <td className="py-4 text-sm text-earth-600">{formatPrice(c.commission_fixe)}</td>
+                    <td className="py-4 text-sm text-earth-600">{c.commission_pourcent}%</td>
+                    <td className="py-4">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${c.approuve ? 'bg-primary-100 text-primary-700' : 'bg-secondary-100 text-secondary-700'}`}>
+                        {c.approuve ? 'Approuvée' : 'En attente'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+
+      {showCreate && (
+        <Modal title="Nouvelle catégorie" onClose={() => setShowCreate(false)}>
+          <CreateCategorieForm toast={toast} onClose={() => setShowCreate(false)} onCreated={(c) => setCategories((prev) => [...prev, c])} />
+        </Modal>
+      )}
+    </div>
+  );
+};
+
+const ProduitsTab = ({ toast }) => {
+  const [produits, setProduits] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+
+  const load = () => {
+    setLoading(true);
+    Promise.all([apiFetch('/produits'), apiFetch('/categories')])
+      .then(([p, c]) => { setProduits(p); setCategories(c); })
+      .catch((err) => toast(err.message, 'error'))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center justify-end">
+        <button onClick={() => setShowCreate(true)} className="px-4 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 transition">+ Nouveau produit</button>
+      </div>
+
+      <SectionCard title="Catalogue produits" icon={Icons.leaf}>
+        {loading ? (
+          <p className="text-sm text-earth-400 py-6 text-center">Chargement...</p>
+        ) : produits.length === 0 ? (
+          <p className="text-sm text-earth-400 py-6 text-center">Aucun produit pour le moment.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="text-left text-xs text-earth-500 uppercase tracking-wider border-b border-earth-200">
+                  <th className="pb-3 font-medium">Nom</th>
+                  <th className="pb-3 font-medium">Catégorie</th>
+                  <th className="pb-3 font-medium">Unité</th>
+                  <th className="pb-3 font-medium">Fourchette de prix</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-earth-100">
+                {produits.map((p) => (
+                  <tr key={p.id} className="hover:bg-earth-50 transition-colors">
+                    <td className="py-4">
+                      <p className="text-sm font-medium text-earth-900">{p.nom}</p>
+                      {p.description && <p className="text-xs text-earth-400 truncate max-w-xs">{p.description}</p>}
+                    </td>
+                    <td className="py-4 text-sm text-earth-600">{p.categorie?.nom || '—'}</td>
+                    <td className="py-4 text-sm text-earth-600">{p.unite}</td>
+                    <td className="py-4 text-sm text-earth-600">{formatPrice(p.prix_min)} – {formatPrice(p.prix_max)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+
+      {showCreate && (
+        <Modal title="Nouveau produit" onClose={() => setShowCreate(false)}>
+          <CreateProduitForm categories={categories} toast={toast} onClose={() => setShowCreate(false)} onCreated={(p) => setProduits((prev) => [...prev, p])} />
+        </Modal>
+      )}
+    </div>
+  );
+};
+
+const VERIF_STYLES = {
+  en_attente: { label: 'En attente', chip: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500' },
+  verifie: { label: 'Vérifié', chip: 'bg-blue-100 text-blue-700', dot: 'bg-blue-500' },
+  valide: { label: 'Validé', chip: 'bg-primary-100 text-primary-700', dot: 'bg-primary-500' },
+  refuse: { label: 'Refusé', chip: 'bg-red-100 text-red-700', dot: 'bg-red-500' },
+};
+
+const VerificationBadge = ({ statut }) => {
+  const cfg = VERIF_STYLES[statut] || VERIF_STYLES.en_attente;
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${cfg.chip}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`}></span>
+      {cfg.label}
+    </span>
+  );
+};
+
+const VerificationsTab = ({ toast }) => {
+  const [livreurs, setLivreurs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [statut, setStatut] = useState('en_attente');
+  const [actionBusy, setActionBusy] = useState(false);
+
+  const load = (s = statut) => {
+    setLoading(true);
+    apiFetch(`/admin/livreurs/verification${s ? `?statut=${s}` : ''}`)
+      .then(setLivreurs)
+      .catch((err) => toast(err.message, 'error'))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const runAction = async (id, action) => {
+    setActionBusy(true);
+    try {
+      let body = {};
+      if (action === 'refuser') {
+        const motif = window.prompt('Motif du refus :');
+        if (!motif || !motif.trim()) { setActionBusy(false); return; }
+        body = { motif: motif.trim() };
+      }
+      await apiFetch(`/admin/livreurs/${id}/${action}`, { method: 'PUT', body: JSON.stringify(body) });
+      toast(action === 'valider' ? 'Dossier validé.' : action === 'verifier' ? 'Dossier marqué comme vérifié.' : 'Dossier refusé.');
+      load();
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const filterTabs = [
+    { id: 'en_attente', label: 'En attente' },
+    { id: 'verifie', label: 'Vérifiés' },
+    { id: 'valide', label: 'Validés' },
+    { id: 'refuse', label: 'Refusés' },
+  ];
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-wrap gap-2">
+        {filterTabs.map((t) => (
+          <button key={t.id} onClick={() => { setStatut(t.id); load(t.id); }}
+            className={`px-4 py-2 rounded-xl text-sm font-medium border transition ${statut === t.id ? 'bg-earth-900 text-white border-earth-900' : 'bg-white border-earth-200 text-earth-600 hover:border-earth-300'}`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="p-5 bg-white border border-earth-200 rounded-2xl animate-pulse">
+              <div className="h-4 w-2/3 bg-earth-100 rounded mb-2"></div>
+              <div className="h-3 w-1/2 bg-earth-100 rounded mb-2"></div>
+              <div className="h-3 w-1/3 bg-earth-100 rounded"></div>
+            </div>
+          ))}
+        </div>
+      ) : livreurs.length === 0 ? (
+        <div className="py-16 text-center bg-white border border-earth-200 rounded-2xl">
+          <span className="inline-flex text-earth-300 mb-2"><Icons.truck /></span>
+          <p className="text-sm text-earth-400">Aucun livreur dans cette catégorie.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {livreurs.map((l) => (
+            <div key={l.id} className="p-5 bg-white border border-earth-200 rounded-2xl">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold">
+                    {(l.prenom || '?')[0]}{(l.nom || '?')[0]}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-earth-900">{l.nom} {l.prenom}</p>
+                    <p className="text-xs text-earth-400">{l.email}</p>
+                    <p className="text-xs text-earth-500 mt-0.5">{l.telephone}</p>
+                  </div>
+                </div>
+                <VerificationBadge statut={l.statut_verification} />
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                <div className="text-earth-500"><span className="font-medium text-earth-700">Ville :</span> {l.ville || '—'}</div>
+                <div className="text-earth-500"><span className="font-medium text-earth-700">Quartier :</span> {l.quartier || '—'}</div>
+                <div className="text-earth-500"><span className="font-medium text-earth-700">Transport :</span> {l.type_transport || '—'}</div>
+                <div className="text-earth-500"><span className="font-medium text-earth-700">Moyen :</span> {l.moyen_deplacement || '—'}</div>
+                <div className="text-earth-500"><span className="font-medium text-earth-700">CNI :</span> {l.cni_numero || '—'}</div>
+                <div className="text-earth-500"><span className="font-medium text-earth-700">Mobile Money :</span> {l.mobile_money_numero || '—'}</div>
+                <div className="text-earth-500"><span className="font-medium text-earth-700">Véhicule :</span> {l.vehicule_marque_modele || '—'}{l.vehicule_plaque ? ` (${l.vehicule_plaque})` : ''}</div>
+                <div className="text-earth-500"><span className="font-medium text-earth-700">Contact urgence :</span> {l.contact_urgence_telephone || '—'}</div>
+              </div>
+
+              {(l.cni_photo || l.photo_profil) && (
+                <div className="mt-3 flex gap-3">
+                  {l.photo_profil && <a href={l.photo_profil} target="_blank" rel="noreferrer" className="text-xs text-primary-600 hover:underline">Photo profil ↗</a>}
+                  {l.cni_photo && <a href={l.cni_photo} target="_blank" rel="noreferrer" className="text-xs text-primary-600 hover:underline">Pièce d'identité ↗</a>}
+                </div>
+              )}
+
+              {l.statut_verification === 'refuse' && l.motif_refus && (
+                <p className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">Motif du refus : {l.motif_refus}</p>
+              )}
+
+              <div className="mt-4 pt-3 border-t border-earth-100 flex items-center justify-end gap-2">
+                {l.statut_verification !== 'valide' ? (
+                  <>
+                    <button onClick={() => runAction(l.id, 'verifier')} disabled={actionBusy}
+                      className="px-3 py-2 rounded-lg text-xs font-medium border border-earth-200 text-earth-600 hover:bg-earth-50 transition disabled:opacity-50">Vérifier</button>
+                    <button onClick={() => runAction(l.id, 'valider')} disabled={actionBusy}
+                      className="px-3 py-2 rounded-lg text-xs font-medium bg-primary-600 text-white hover:bg-primary-700 transition disabled:opacity-50">Valider</button>
+                    <button onClick={() => runAction(l.id, 'refuser')} disabled={actionBusy}
+                      className="px-3 py-2 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50">Refuser</button>
+                  </>
+                ) : (
+                  <span className="text-xs text-primary-600 font-medium">Éligible aux missions</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const Sidebar = ({ activeTab, setActiveTab, collapsed, setCollapsed, onLogout }) => {
+  const menuItems = [
+    { id: 'overview', label: 'Vue d\'ensemble', icon: Icons.dashboard },
+    { id: 'commandes', label: 'Commandes', icon: Icons.package },
+    { id: 'livraisons', label: 'Livraisons', icon: Icons.truck },
+    { id: 'litiges', label: 'Litiges', icon: Icons.alert },
+    { id: 'paiements', label: 'Paiements', icon: Icons.money },
+    { id: 'users', label: 'Utilisateurs', icon: Icons.users },
+    { id: 'verifications', label: 'Vérifications', icon: Icons.check },
+    { id: 'categories', label: 'Catégories', icon: Icons.tag },
+    { id: 'produits', label: 'Produits', icon: Icons.leaf },
+  ];
+
+  return (
+    <aside className={`fixed left-0 top-0 h-full bg-white border-r border-earth-200 z-40 transition-all duration-300 ${collapsed ? 'w-20' : 'w-72'}`}>
+      <div className="h-16 flex items-center px-6 border-b border-earth-100">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-primary-600 rounded-xl flex items-center justify-center flex-shrink-0"><Icons.leaf /></div>
+          {!collapsed && (
+            <div>
+              <span className="text-lg font-bold text-earth-900">TerraLink</span>
+              <span className="block text-[10px] text-earth-400 uppercase tracking-wider">Administration</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <nav className="p-3 space-y-1">
+        {menuItems.map((item) => (
+          <button key={item.id} onClick={() => setActiveTab(item.id)}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all sidebar-link ${
+              activeTab === item.id ? 'active shadow-md' : 'text-earth-600 hover:text-earth-900'
+            }`}>
+            <item.icon />
+            {!collapsed && <span>{item.label}</span>}
+          </button>
+        ))}
+      </nav>
+
+      <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-earth-100">
+        <button onClick={onLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-earth-600 hover:bg-earth-50 hover:text-red-600 transition">
+          <Icons.logout />
+          {!collapsed && <span>Deconnexion</span>}
+        </button>
+      </div>
+    </aside>
+  );
+};
+
+const TopBar = ({ collapsed, setCollapsed, notifications, onMarkOneRead, onMarkAllRead }) => {
+  const [notifOpen, setNotifOpen] = useState(false);
+  const unreadCount = notifications.filter(n => !n.lu).length;
+
+  return (
+    <header className={`fixed top-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-earth-200 z-30 transition-all duration-300 ${collapsed ? 'left-20' : 'left-72'}`}>
+      <div className="h-full flex items-center justify-between px-6">
+        <div className="flex items-center gap-4">
+          <button onClick={() => setCollapsed(!collapsed)} className="p-2 hover:bg-earth-100 rounded-lg transition text-earth-600"><Icons.menu /></button>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-earth-400"><Icons.search /></span>
+            <input type="text" placeholder="Rechercher..." 
+              className="pl-10 pr-4 py-2 bg-earth-50 border border-earth-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent w-64" />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <button onClick={() => setNotifOpen(!notifOpen)} className="relative p-2 hover:bg-earth-100 rounded-xl transition text-earth-600">
+              <Icons.bell />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-danger text-white text-xs font-bold rounded-full flex items-center justify-center">{unreadCount}</span>
+              )}
+            </button>
+
+            {notifOpen && (
+              <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-earth-200 overflow-hidden animate-fade-in">
+                <div className="px-4 py-3 border-b border-earth-100 flex items-center justify-between">
+                  <h4 className="font-semibold text-earth-900 text-sm">Notifications</h4>
+                  <button onClick={onMarkAllRead} className="text-xs text-primary-600 hover:text-primary-700">Tout marquer comme lu</button>
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <p className="text-sm text-earth-400 text-center py-6">Aucune notification.</p>
+                  ) : notifications.map((notif) => (
+                    <div key={notif.id} onClick={() => !notif.lu && onMarkOneRead(notif.id)}
+                      className={`px-4 py-3 hover:bg-earth-50 transition cursor-pointer border-b border-earth-50 ${!notif.lu ? 'bg-primary-50/30' : ''}`}>
+                      <div className="flex items-start gap-3">
+                        <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${!notif.lu ? 'bg-primary-500 pulse-dot' : 'bg-earth-300'}`}></div>
+                        <div>
+                          <p className="text-sm font-medium text-earth-900">{notif.titre}</p>
+                          <p className="text-xs text-earth-500 mt-0.5">{notif.message}</p>
+                          <p className="text-xs text-earth-400 mt-1">{formatDate(notif.date_envoi)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 pl-3 border-l border-earth-200">
+            <div className="text-right hidden sm:block">
+              <p className="text-sm font-medium text-earth-900">Admin TerraLink</p>
+              <p className="text-xs text-earth-400">Administrateur</p>
+            </div>
+            <div className="w-9 h-9 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold text-sm">AT</div>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+const AdminDashboard = ({ onLogout, toast }) => {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [collapsed, setCollapsed] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    apiFetch('/notifications')
+      .then(setNotifications)
+      .catch(() => { /* notifications are non-critical; fail quietly */ });
+  }, []);
+
+  const markOneRead = async (id) => {
+    try {
+      await apiFetch(`/notifications/${id}/lu`, { method: 'PUT' });
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, lu: true } : n)));
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  };
+
+  const markAllRead = async () => {
+    try {
+      await apiFetch('/notifications/lu', { method: 'PUT' });
+      setNotifications((prev) => prev.map((n) => ({ ...n, lu: true })));
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  };
+
+  const tabs = {
+    overview: <OverviewTab toast={toast} />,
+    commandes: <CommandesTab toast={toast} />,
+    livraisons: <LivraisonsTab toast={toast} />,
+    litiges: <LitigesTab toast={toast} />,
+    paiements: <PaiementsTab toast={toast} />,
+    users: <UsersTab toast={toast} />,
+    verifications: <VerificationsTab toast={toast} />,
+    categories: <CategoriesTab toast={toast} />,
+    produits: <ProduitsTab toast={toast} />,
+  };
+
+  const titles = {
+    overview: 'Tableau de bord',
+    commandes: 'Gestion des commandes',
+    livraisons: 'Suivi des livraisons',
+    litiges: 'Gestion des litiges',
+    paiements: 'Paiements et finances',
+    users: 'Gestion des utilisateurs',
+    verifications: 'Vérification des livreurs',
+    categories: 'Gestion des catégories',
+    produits: 'Gestion des produits',
+  };
+
+  return (
+    <div className="min-h-screen bg-earth-50">
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} collapsed={collapsed} setCollapsed={setCollapsed} onLogout={onLogout} />
+      <TopBar collapsed={collapsed} setCollapsed={setCollapsed} notifications={notifications} onMarkOneRead={markOneRead} onMarkAllRead={markAllRead} />
+
+      <main className={`pt-16 transition-all duration-300 ${collapsed ? 'ml-20' : 'ml-72'}`}>
+        <div className="p-6">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-earth-900">{titles[activeTab]}</h1>
+            <p className="text-sm text-earth-500 mt-1">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+          </div>
+          {tabs[activeTab]}
+        </div>
+      </main>
+    </div>
+  );
+};
+
+const Root = () => {
+  const [authed, setAuthed] = useState(!!localStorage.getItem(ADMIN_TOKEN_KEY));
+  const { push, ToastHost } = useToasts();
+
+  const logout = () => {
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
+    setAuthed(false);
+  };
+
+  return (
+    <>
+      {authed ? (
+        <AdminDashboard onLogout={logout} toast={push} />
+      ) : (
+        <LoginScreen onLoggedIn={() => setAuthed(true)} toast={push} />
+      )}
+      <ToastHost />
+    </>
+  );
+};
+
+const root = ReactDOM.createRoot(document.getElementById('admin-root'));
+root.render(<Root />);
+</script>
+{% endverbatim %}
+{% endblock %}

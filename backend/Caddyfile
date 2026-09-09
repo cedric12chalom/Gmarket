@@ -1,0 +1,28 @@
+# FrankenPHP / Caddyfile — serveur de production pour l'API Symfony TerraLink
+# (remplace le serveur de dev mono-thread `php -S` qui ne gérait pas les requêtes concurrentes)
+{
+	# Render gère le TLS ; FrankenPHP ne doit pas s'auto-attribuer de certificat HTTPS.
+	auto_https off
+
+	# Active le module FrankenPHP (Caddy + PHP) : sert l'application PHP via un pool
+	# de workers multi-requêtes (fini la connexion coupée / ERR_CONNECTION_RESET).
+	frankenphp
+}
+
+# Écoute sur le port fourni par Render (variable $PORT), avec repli sur 8080.
+:{$PORT:8080} {
+	# Racine du site = dossier public de l'application Symfony.
+	root * /app/public
+
+	# Sert les fichiers statiques existants et route le reste vers public/index.php
+	# (front controller Symfony compatible FrankenPHP).
+	php_server
+
+	# Compression HTTP (gzip / zstd) pour réduire la bande passante.
+	encode zstd gzip
+
+	header {
+		# N'expose pas les en-têtes internes.
+		-X-Server-Powered-By
+	}
+}
