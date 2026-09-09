@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Votre période d'essai se termine</title>
+</head>
+<body style="font-family: Arial, sans-serif; background: #f4f4f5; margin: 0; padding: 24px;">
+    <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 12px; overflow: hidden;">
+        <div style="background: #d97706; color: #ffffff; padding: 24px;">
+            <h1 style="margin: 0; font-size: 20px;">Votre essai se termine bientôt</h1>
+        </div>
+        <div style="padding: 24px;">
+            <p>Bonjour {{ vendeur.prenomNom ?: vendeur.email }},</p>
+            <p>Votre période d'essai de la boutique <strong>{{ vendeur.boutiqueActive.nom }}</strong> se termine le <strong>{{ souscription.dateFin | date('d/m/Y') }}</strong>.</p>
+            <p>Pour continuer à publier et vendre, choisissez une formule d'abonnement avant la fin de la période.</p>
+        </div>
+    </div>
+</body>
+</html>

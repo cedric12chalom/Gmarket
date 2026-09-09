@@ -1,0 +1,23 @@
+# Backend
+backend/vendor/
+backend/var/cache/
+backend/var/log/
+backend/var/data.db
+backend/config/jwt/*.pem
+backend/.env.local
+backend/composer.lock
+*.profiler.*
+
+# Frontend (node_modules not committed)
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

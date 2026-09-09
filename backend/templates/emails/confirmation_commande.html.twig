@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirmation de commande #{{ commande.id }}</title>
+</head>
+<body style="font-family: Arial, sans-serif; background: #f4f4f5; margin: 0; padding: 24px;">
+    <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 12px; overflow: hidden;">
+        <div style="background: #1e293b; color: #ffffff; padding: 24px;">
+            <h1 style="margin: 0; font-size: 20px;">Merci pour votre commande !</h1>
+            <p style="margin: 8px 0 0; opacity: 0.85;">Commande #{{ commande.id }} chez {{ commande.boutique.nom }}</p>
+        </div>
+        <div style="padding: 24px;">
+            <p>Bonjour {{ acheteur.prenomNom ?: acheteur.email }},</p>
+            <p>Votre commande a bien été enregistrée. Son statut est <strong>{{ commande.statut.value | upper }}</strong>.</p>
+            <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+                {% for ligne in commande.lignes %}
+                <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e4e4e7;">{{ ligne.produit.nom }}</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e4e4e7;">{{ ligne.couleur }} / {{ ligne.taille }}</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #e4e4e7; text-align: right;">x{{ ligne.quantite }} — {{ ligne.sousTotal }} FCFA</td>
+                </tr>
+                {% endfor %}
+            </table>
+            <p style="text-align: right; font-size: 18px; font-weight: bold;">Total : {{ commande.montantTotal }} FCFA</p>
+            <a href="{{ url('app_boutique', {slug: commande.boutique.slug}) }}" style="display: inline-block; background: #2563eb; color: #ffffff; padding: 12px 20px; border-radius: 8px; text-decoration: none;">Voir la boutique</a>
+        </div>
+    </div>
+</body>
+</html>

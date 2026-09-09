@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Votre commande a été livrée</title>
+</head>
+<body style="font-family: Arial, sans-serif; background: #f4f4f5; margin: 0; padding: 24px;">
+    <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 12px; overflow: hidden;">
+        <div style="background: #16a34a; color: #ffffff; padding: 24px;">
+            <h1 style="margin: 0; font-size: 20px;">Livrée 🎉</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9;">Commande #{{ commande.id }} — {{ commande.boutique.nom }}</p>
+        </div>
+        <div style="padding: 24px;">
+            <p>Bonjour {{ acheteur.prenomNom ?: acheteur.email }},</p>
+            <p>Votre commande vient d'être marquée comme <strong>livrée</strong>. On espère que vous êtes ravi !</p>
+            <p>Votre avis compte beaucoup pour la communauté. N'hésitez pas à laisser un commentaire sur cette commande.</p>
+        </div>
+    </div>
+</body>
+</html>
