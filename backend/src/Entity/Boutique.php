@@ -56,6 +56,10 @@ class Boutique
     #[ORM\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE)]
     private \DateTimeImmutable $createdAt;
 
+    /** Palette personnalisée : {accent, primary, secondary, background}. */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $customColors = null;
+
     /**
      * @var Collection<int, Produit>
      */
@@ -194,6 +198,38 @@ class Boutique
     public function getLienPartageable(): string
     {
         return '/boutique/' . $this->slug;
+    }
+
+    public function getCustomColors(): ?array
+    {
+        return $this->customColors;
+    }
+
+    public function setCustomColors(?array $customColors): static
+    {
+        $this->customColors = $customColors;
+        return $this;
+    }
+
+    /** Retourne la couleur accent effective : customColors['accent'] ou le thème par défaut. */
+    public function getAccentColor(): string
+    {
+        if ($this->customColors && isset($this->customColors['accent'])) {
+            return $this->customColors['accent'];
+        }
+        return $this->getTheme()->accent();
+    }
+
+    /** Retourne la palette complète (custom ou thème). */
+    public function getPalette(): array
+    {
+        $themeAccent = $this->getTheme()->accent();
+        return [
+            'accent' => $this->customColors['accent'] ?? $themeAccent,
+            'primary' => $this->customColors['primary'] ?? '#1e293b',
+            'secondary' => $this->customColors['secondary'] ?? '#64748b',
+            'background' => $this->customColors['background'] ?? '#ffffff',
+        ];
     }
 
     /**

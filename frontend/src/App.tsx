@@ -10,6 +10,7 @@ import ProduitPage from './pages/ProduitPage'
 import CataloguePage from './pages/CataloguePage'
 import MonComptePage from './pages/MonComptePage'
 import MaBoutiquePage from './pages/MaBoutiquePage'
+import CreerBoutiquePage from './pages/CreerBoutiquePage'
 import CommandesPage from './pages/CommandesPage'
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/inscription" element={<RegisterPage />} />
           <Route path="/mon-compte" element={<MonComptePage />} />
           <Route path="/ma-boutique" element={<MaBoutiquePage />} />
+          <Route path="/creer-boutique" element={<CreerBoutiquePage />} />
           <Route path="/commandes" element={<CommandesPage />} />
         </Route>
       </Routes>

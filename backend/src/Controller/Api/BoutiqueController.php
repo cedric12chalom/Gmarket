@@ -71,6 +71,11 @@ class BoutiqueController extends AbstractController
         $boutique->setTheme($payload['theme'] ?? BoutiqueTheme::CLASSIQUE->value);
         $boutique->setTiktokPseudo($payload['tiktokPseudo'] ?? null);
 
+        // Palette personnalisée (optionnel).
+        if (!empty($payload['customColors']) && is_array($payload['customColors'])) {
+            $boutique->setCustomColors($payload['customColors']);
+        }
+
         // Livraison V1 simplifiée : simple déclaration.
         $boutique->setALivreur((bool) ($payload['aLivreur'] ?? false));
         $boutique->setLivreurDetail($payload['livreurDetail'] ?? null);
@@ -119,6 +124,9 @@ class BoutiqueController extends AbstractController
         }
         if (array_key_exists('livreurDetail', $payload)) {
             $boutique->setLivreurDetail($payload['livreurDetail'] ?: null);
+        }
+        if (array_key_exists('customColors', $payload)) {
+            $boutique->setCustomColors(is_array($payload['customColors']) ? $payload['customColors'] : null);
         }
 
         $this->entityManager->flush();

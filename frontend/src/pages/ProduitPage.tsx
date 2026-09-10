@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ShoppingCart, ChevronLeft, Check } from 'lucide-react'
+import { ShoppingCart, ChevronLeft, Check, Paintbrush } from 'lucide-react'
+import TShirtColorChanger from '../components/TShirtColorChanger'
 import api from '../services/api'
 
 export default function ProduitPage() {
@@ -10,6 +11,7 @@ export default function ProduitPage() {
   const [selectedColor, setSelectedColor] = useState('')
   const [selectedTaille, setSelectedTaille] = useState('')
   const [ajouté, setAjouté] = useState(false)
+  const [useColorChanger, setUseColorChanger] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -44,9 +46,23 @@ export default function ProduitPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Images */}
         <div>
-          <div className="aspect-square bg-gray-100 rounded-2xl overflow-hidden mb-3">
-            <img src={produit.images?.[selectedImg] ?? produit.imagePrincipale} alt={produit.nom} className="w-full h-full object-cover" />
+          {useColorChanger ? (
+            <TShirtColorChanger imageUrl={produit.images?.[selectedImg] ?? produit.imagePrincipale} alt={produit.nom} className="aspect-square mb-3" />
+          ) : (
+            <div className="aspect-square bg-gray-100 rounded-2xl overflow-hidden mb-3">
+              <img src={produit.images?.[selectedImg] ?? produit.imagePrincipale} alt={produit.nom} className="w-full h-full object-cover" />
+            </div>
+          )}
+
+          {/* Toggle color changer — visible seulement pour les t-shirts */}
+          <div className="flex items-center gap-2 mb-3">
+            <button onClick={() => setUseColorChanger(!useColorChanger)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm border-2 transition ${useColorChanger ? 'border-accent bg-accent/10 font-semibold' : 'border-gray-200 hover:border-gray-300'}`}>
+              <Paintbrush className="w-4 h-4" />
+              {useColorChanger ? 'Voir la photo originale' : 'Essayer une autre couleur'}
+            </button>
           </div>
+
           {produit.images?.length > 1 && (
             <div className="flex gap-2">
               {produit.images.map((img: string, i: number) => (

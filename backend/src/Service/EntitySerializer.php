@@ -75,6 +75,9 @@ class EntitySerializer
             'theme' => $boutique->getTheme()->value,
             'themeRendu' => $boutique->getTheme()->rendu(),
             'themeAccent' => $boutique->getTheme()->accent(),
+            'customColors' => $boutique->getCustomColors(),
+            'palette' => $boutique->getPalette(),
+            'accentColor' => $boutique->getAccentColor(),
             'tiktokPseudo' => $boutique->getTiktokPseudo(),
             'aLivreur' => $boutique->getALivreur(),
             'livreurDetail' => $boutique->getLivreurDetail(),
@@ -96,6 +99,8 @@ class EntitySerializer
             'logo' => $boutique->getLogo(),
             'theme' => $boutique->getTheme()->value,
             'themeAccent' => $boutique->getTheme()->accent(),
+            'accentColor' => $boutique->getAccentColor(),
+            'palette' => $boutique->getPalette(),
             'tiktokPseudo' => $boutique->getTiktokPseudo(),
             'lienPartageable' => $boutique->getLienPartageable(),
         ];

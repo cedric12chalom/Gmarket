@@ -30,7 +30,9 @@ export default function MaBoutiquePage() {
   if (!maBoutique) return (
     <div className="text-center py-20">
       <p className="text-gray-500 mb-4">Créez votre boutique pour commencer à vendre.</p>
-      <p className="text-sm text-gray-400">Contactez l'administration pour créer votre boutique.</p>
+      <Link to="/creer-boutique" className="inline-block bg-accent text-primary px-6 py-3 rounded-full font-bold hover:bg-yellow-400 transition">
+        Créer ma boutique maintenant
+      </Link>
     </div>
   )
 
@@ -45,12 +47,23 @@ export default function MaBoutiquePage() {
     <div className="space-y-8">
       {/* Header boutique */}
       <div className="flex items-center gap-6">
-        <div className="w-16 h-16 rounded-xl flex items-center justify-center text-xl font-bold" style={{ backgroundColor: maBoutique.themeAccent + '20', color: maBoutique.themeAccent }}>
+        <div className="w-16 h-16 rounded-xl flex items-center justify-center text-xl font-bold" style={{ backgroundColor: maBoutique.accentColor + '20', color: maBoutique.accentColor }}>
           {maBoutique.nom[0]}
         </div>
         <div>
           <h1 className="text-2xl font-bold text-primary">{maBoutique.nom}</h1>
-          <Link to={`/boutique/${maBoutique.slug}`} className="text-accent text-sm hover:underline">Voir ma boutique →</Link>
+          <div className="flex items-center gap-3 text-sm">
+            <Link to={`/boutique/${maBoutique.slug}`} className="text-accent hover:underline">Voir ma boutique →</Link>
+            <span className="text-gray-400">|</span>
+            <Link to="/creer-boutique" className="text-gray-500 hover:text-primary hover:underline">Personnaliser l'apparence</Link>
+          </div>
+          {maBoutique.customColors && (
+            <div className="flex gap-1.5 mt-2">
+              {Object.entries(maBoutique.customColors).map(([k, v]) => (
+                <span key={k} title={k} className="w-4 h-4 rounded-full border border-gray-200" style={{ backgroundColor: String(v) }} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

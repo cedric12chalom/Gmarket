@@ -1,6 +1,19 @@
 import { create } from 'zustand'
 import api from '../services/api'
 
+interface Boutique {
+  id: number
+  nom: string
+  slug: string
+  theme: string
+  themeAccent: string
+  tiktokPseudo?: string | null
+  description?: string | null
+  accentColor?: string
+  customColors?: Record<string, string> | null
+  palette?: Record<string, string>
+}
+
 interface User {
   id: number
   email: string
@@ -10,7 +23,7 @@ interface User {
   tiktok: string | null
   instagram: string | null
   roles: string[]
-  boutiques?: { id: number; nom: string; slug: string; theme: string; themeAccent: string }[]
+  boutiques?: Boutique[]
   abonnement?: { statut: string; dateFin: string } | null
 }
 

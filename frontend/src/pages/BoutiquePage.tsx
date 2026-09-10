@@ -21,8 +21,20 @@ export default function BoutiquePage() {
 
   if (!boutique) return <div className="text-center py-20 text-gray-400">Chargement...</div>
 
+  const palette = boutique.palette ?? {
+    accent: boutique.themeAccent ?? '#1e293b',
+    primary: '#1e293b',
+    secondary: '#64748b',
+    background: '#ffffff',
+  }
+
+  const sectionStyle = {
+    backgroundColor: palette.background,
+    border: '1px solid ' + palette.accent + '20',
+  }
+
   return (
-    <div>
+    <div style={{ backgroundColor: palette.background }}>
       {/* Bannière */}
       <div className="relative h-48 md:h-64 rounded-2xl overflow-hidden mb-6">
         <img src={boutique.banniere} alt={boutique.nom} className="w-full h-full object-cover" />
@@ -33,7 +45,7 @@ export default function BoutiquePage() {
             <h1 className="text-2xl font-bold">{boutique.nom}</h1>
             <div className="flex items-center gap-3 text-sm text-white/80 mt-1">
               {boutique.tiktokPseudo && <span className="flex items-center gap-1"><Music className="w-3 h-3" />{boutique.tiktokPseudo}</span>}
-              {avis?.moyenne > 0 && <span className="flex items-center gap-1"><Star className="w-3 h-3 fill-accent text-accent" />{avis.moyenne}/5</span>}
+              {avis?.moyenne > 0 && <span className="flex items-center gap-1"><Star className="w-3 h-3 fill-accent text-accent" style={{ color: palette.accent }} />{avis.moyenne}/5</span>}
             </div>
           </div>
         </div>
@@ -44,14 +56,14 @@ export default function BoutiquePage() {
 
       {/* Avis */}
       {avis?.avis?.length > 0 && (
-        <div className="bg-white rounded-2xl p-6 border border-gray-100 mb-8">
-          <h3 className="font-bold text-primary mb-4">Avis ({avis.count})</h3>
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 mb-8" style={sectionStyle}>
+          <h3 className="font-bold text-primary mb-4" style={{ color: palette.primary }}>Avis ({avis.count})</h3>
           <div className="space-y-3">
             {avis.avis.map((a: any) => (
               <div key={a.id} className="flex items-start gap-3 text-sm">
-                <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-xs font-bold shrink-0">{a.acheteur?.prenomNom?.[0] ?? '?'}</div>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0" style={{ backgroundColor: palette.accent + '20', color: palette.accent }}>{a.acheteur?.prenomNom?.[0] ?? '?'}</div>
                 <div>
-                  <p className="font-semibold">{a.acheteur?.prenomNom} — <span className="text-accent">{'★'.repeat(a.note)}</span></p>
+                  <p className="font-semibold">{a.acheteur?.prenomNom} — <span className="text-accent" style={{ color: palette.accent }}>{'★'.repeat(a.note)}</span></p>
                   <p className="text-gray-500">{a.commentaire}</p>
                 </div>
               </div>
@@ -61,7 +73,7 @@ export default function BoutiquePage() {
       )}
 
       {/* Produits */}
-      <h2 className="text-xl font-bold text-primary mb-4">Produits ({produits.length})</h2>
+      <h2 className="text-xl font-bold text-primary mb-4" style={{ color: palette.primary }}>Produits ({produits.length})</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {produits.map((p) => (
           <Link key={p.id} to={`/produit/${p.id}`} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition group">
